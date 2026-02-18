@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>カード確率計算</title>
+</head>
+<body>
+  <h1>カード確率計算</h1>
+
+  <label>デッキ枚数 N：</label>
+  <input type="number" id="deck"><br><br>
+
+  <label>当たり枚数 K：</label>
+  <input type="number" id="success"><br><br>
+
+  <label>引く枚数 H：</label>
+  <input type="number" id="draw"><br><br>
+
+  <button onclick="calculate()">計算する</button>
+
+  <h2 id="result"></h2>
+
+  <script>
+    function combination(n, r) {
+      if (r > n) return 0;
+      if (r === 0 || r === n) return 1;
+      let numerator = 1;
+      let denominator = 1;
+      for (let i = 0; i < r; i++) {
+        numerator *= (n - i);
+        denominator *= (i + 1);
+      }
+      return numerator / denominator;
+    }
+
+    function calculate() {
+      let N = parseInt(document.getElementById("deck").value);
+      let K = parseInt(document.getElementById("success").value);
+      let H = parseInt(document.getElementById("draw").value);
+
+      if (H > N || K > N) {
+        document.getElementById("result").innerText = "入力値が不正です";
+        return;
+      }
+
+      let zeroSuccess = combination(N - K, H) / combination(N, H);
+      let probability = 1 - zeroSuccess;
+
+      document.getElementById("result").innerText =
+        "1枚以上引く確率：" + (probability * 100).toFixed(2) + "%";
+    }
+  </script>
+</body>
+</html>
