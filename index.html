@@ -10,8 +10,8 @@
   <header class="header">
     <h1>VS 確率計算（vsスー使用可）</h1>
     <p class="sub">
-      初手H枚で「vsスー」「vsスー以外のVS」「火」「闇」がそろう確率を計算します。
-      なお、火と闇は同一カードに共存しない前提です。
+      初手H枚で「vsスー」「VSカード合計が2枚以上」「火」「闇」がそろう確率を計算します。
+      （vsスーは火でも闇でもないがVSとして数える。火と闇は同一カードに共存しない前提。）
     </p>
   </header>
 
@@ -36,7 +36,7 @@
       <div class="hint">
         <ul>
           <li>「その他」は <b>自動計算</b>（残り枚数を自動で埋めます）。</li>
-          <li>合計がNを超えるとエラーになります（計算できません）。</li>
+          <li>合計がNを超えるとエラーになり、計算できません。</li>
         </ul>
       </div>
 
@@ -53,7 +53,7 @@
             <tr>
               <td><b>vsスー</b></td>
               <td><input id="nA" type="number" min="0" step="1" value="1"></td>
-              <td class="muted">A（使用条件の対象）</td>
+              <td class="muted">A（VSとして数える／火でも闇でもない）</td>
             </tr>
             <tr>
               <td>VS&火</td>
@@ -91,6 +91,7 @@
 
       <div class="row">
         <button id="calcBtn" class="primary">確率を計算</button>
+        <button id="resetBtn" class="danger">初期値に戻す</button>
         <button id="saveBtn">保存</button>
         <button id="loadBtn">読み込み</button>
         <button id="exportBtn">JSONエクスポート</button>
@@ -98,7 +99,6 @@
           JSONインポート
           <input id="importFile" type="file" accept="application/json" />
         </label>
-        <button id="resetBtn" class="danger">初期値に戻す</button>
       </div>
     </section>
 
