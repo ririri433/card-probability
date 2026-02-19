@@ -1,14 +1,11 @@
-// VS専用簡易版（堅牢版）
-// 入力カテゴリ：
-// A=vsスー, VF=VS&火, VD=VS&闇, V=VSのみ(vsスー以外), F=火のみ, D=闇のみ, O=その他(自動)
-//
+// VS専用簡易版（安定動作版）
 // 成功条件（最新版）:
-// 1) A >= 1
-// 2) VS合計 >= 2  （AもVSとしてカウント）  VS合計 = A + VF + VD + V
-// 3) 火 >= 1       火 = VF + F
-// 4) 闇 >= 1       闇 = VD + D
+// 1) vsスー(A) >= 1
+// 2) VS合計 >= 2  （AもVSとしてカウント）  VS合計 = A + VS&火 + VS&闇 + VSのみ
+// 3) 火 >= 1       火 = VS&火 + 火のみ
+// 4) 闇 >= 1       闇 = VS&闇 + 闇のみ
 //
-// ※ H=5程度なら全列挙で正確＆安全（式が複雑化しない）
+// H=5程度なので全列挙で正確に計算（条件変更に強い）
 
 function toInt(v, fallback = 0) {
   const x = Number.parseInt(String(v), 10);
@@ -28,7 +25,6 @@ function combination(n, k) {
   return num / den;
 }
 
-// 全列挙で成功確率
 function probabilityVsSuUsable(params) {
   const { N, H, nA, nVF, nVD, nV, nF, nD, nO } = params;
 
@@ -51,9 +47,8 @@ function probabilityVsSuUsable(params) {
               const o = H - used;
               if (o < 0 || o > nO) continue;
 
-              // 成功条件（最新版）
               const hasA = a >= 1;
-              const vsTotal = a + vf + vd + v;      // ← AもVSに含める
+              const vsTotal = a + vf + vd + v;   // AもVSに含める
               const hasVs2 = vsTotal >= 2;
               const hasFire = (vf + f) >= 1;
               const hasDark = (vd + d) >= 1;
@@ -99,26 +94,28 @@ document.addEventListener("DOMContentLoaded", () => {
     resultBox: document.getElementById("resultBox"),
 
     calcBtn: document.getElementById("calcBtn"),
+    resetBtn: document.getElementById("resetBtn"),
     saveBtn: document.getElementById("saveBtn"),
     loadBtn: document.getElementById("loadBtn"),
     exportBtn: document.getElementById("exportBtn"),
     importFile: document.getElementById("importFile"),
-    resetBtn: document.getElementById("resetBtn"),
   };
 
-  // --- ID不一致を即検出 ---
-  const required = ["deckSize","handSize","nA","nVF","nVD","nV","nF","nD","nO","status","checkBox","resultBox","calcBtn"];
+  // ID不一致を画面に表示（原因がすぐ分かる）
+  const required = ["deckSize","handSize","nA","nVF","nVD","nV","nF","nD","nO","status","checkBox","resultBox","calcBtn","resetBtn"];
   const missing = required.filter(k => !els[k]);
   if (missing.length) {
-    // ページ上に原因を表示
-    const msg = `エラー：HTMLのidが一致しません。\n見つからない要素: ${missing.join(", ")}\n（index.html と app.js のidを揃えてください）`;
+    const msg =
+      `エラー：HTMLのidが一致しません。\n` +
+      `見つからない要素: ${missing.join(", ")}\n` +
+      `index.html と app.js を丸ごと同時に置き換えてください。`;
     if (els.resultBox) els.resultBox.textContent = msg;
     if (els.status) els.status.textContent = "JS初期化失敗";
     return;
   }
 
   const DEFAULTS = { deckSize: 40, handSize: 5, nA: 1, nVF: 6, nVD: 6, nV: 3, nF: 4, nD: 4 };
-  const STORAGE_KEY = "vs_prob_simple_v2";
+  const STORAGE_KEY = "vs_prob_simple_v3";
 
   function readParams() {
     const N = Math.max(0, toInt(els.deckSize.value, DEFAULTS.deckSize));
@@ -153,7 +150,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (p.H > p.N) notes.push("❌ 初手枚数HがNを超えています");
     if (p.nA === 0) notes.push("⚠ vsスーが0枚です（成功確率は0%）");
 
-    // VS合計≥2の条件が満たせるか（理論的に可能か）
     const vsTotalInDeck = p.nA + p.nVF + p.nVD + p.nV;
     if (vsTotalInDeck < 2) notes.push("⚠ デッキ内のVS合計が2枚未満なので成功確率は0%になります");
 
@@ -161,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const disabled = (p.sumWithoutOther > p.N) || (p.H > p.N) || (p.N <= 0) || (p.H <= 0);
     els.calcBtn.disabled = disabled;
+    els.resetBtn.disabled = false;
     els.status.textContent = disabled ? "入力を修正してください（合計超過 / H>N など）" : "準備OK";
   }
 
@@ -177,6 +174,20 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     els.resultBox.textContent = `vsスーが使用できる確率： ${(r.p * 100).toFixed(2)}%`;
+  }
+
+  function resetToDefaults() {
+    els.deckSize.value = String(DEFAULTS.deckSize);
+    els.handSize.value = String(DEFAULTS.handSize);
+    els.nA.value  = String(DEFAULTS.nA);
+    els.nVF.value = String(DEFAULTS.nVF);
+    els.nVD.value = String(DEFAULTS.nVD);
+    els.nV.value  = String(DEFAULTS.nV);
+    els.nF.value  = String(DEFAULTS.nF);
+    els.nD.value  = String(DEFAULTS.nD);
+    els.resultBox.textContent = "—";
+    syncOtherAndValidate();
+    els.status.textContent = "初期値に戻しました";
   }
 
   function saveToLocal() {
@@ -249,21 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsText(file);
   }
 
-  function resetToDefaults() {
-    els.deckSize.value = String(DEFAULTS.deckSize);
-    els.handSize.value = String(DEFAULTS.handSize);
-    els.nA.value  = String(DEFAULTS.nA);
-    els.nVF.value = String(DEFAULTS.nVF);
-    els.nVD.value = String(DEFAULTS.nVD);
-    els.nV.value  = String(DEFAULTS.nV);
-    els.nF.value  = String(DEFAULTS.nF);
-    els.nD.value  = String(DEFAULTS.nD);
-    els.resultBox.textContent = "—";
-    syncOtherAndValidate();
-    els.status.textContent = "初期値に戻しました";
-  }
-
-  // iOS対策：input + change の両方を見る
+  // iOS対策：input + change 両方で反応させる
   const watch = [els.deckSize, els.handSize, els.nA, els.nVF, els.nVD, els.nV, els.nF, els.nD];
   watch.forEach(el => {
     el.addEventListener("input", syncOtherAndValidate);
@@ -271,6 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   els.calcBtn.addEventListener("click", calculate);
+  els.resetBtn.addEventListener("click", resetToDefaults);
   if (els.saveBtn) els.saveBtn.addEventListener("click", saveToLocal);
   if (els.loadBtn) els.loadBtn.addEventListener("click", loadFromLocal);
   if (els.exportBtn) els.exportBtn.addEventListener("click", exportJSON);
@@ -281,8 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.target.value = "";
     });
   }
-  if (els.resetBtn) els.resetBtn.addEventListener("click", resetToDefaults);
 
-  // init
-  syncOtherAndValidate();
+  // 初期化
+  resetToDefaults();
 });
