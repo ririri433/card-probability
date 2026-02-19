@@ -1,54 +1,101 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>カード確率計算</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>カード確率計算（A使用可）</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>カード確率計算</h1>
+  <header class="header">
+    <h1>カード確率計算（A使用可）</h1>
+    <p class="sub">
+      条件：手札にAがあり、A以外に要素1が1枚以上、要素2が1枚以上、要素3が1枚以上あるとAを使用可能（要素2と3は共存しない）
+    </p>
+  </header>
 
-  <label>デッキ枚数 N：</label>
-  <input type="number" id="deck"><br><br>
+  <main class="container">
+    <section class="panel">
+      <h2>基本設定</h2>
+      <div class="grid">
+        <label class="field">
+          <span>デッキ枚数 N</span>
+          <input id="deckSize" type="number" min="1" step="1" value="40" />
+        </label>
+        <label class="field">
+          <span>初手枚数 H</span>
+          <input id="handSize" type="number" min="1" step="1" value="5" />
+        </label>
+      </div>
+      <div class="row">
+        <button id="addRowBtn">カード行を追加</button>
+        <button id="calcBtn" class="primary">確率を計算</button>
+      </div>
+      <p id="status" class="status"></p>
+    </section>
 
-  <label>当たり枚数 K：</label>
-  <input type="number" id="success"><br><br>
+    <section class="panel">
+      <h2>デッキリスト</h2>
 
-  <label>引く枚数 H：</label>
-  <input type="number" id="draw"><br><br>
+      <div class="hint">
+        <ul>
+          <li>「A？」にチェックを入れた行がカードAとして扱われます（複数行OK＝Aの合計枚数として計算）。</li>
+          <li>要素2と要素3は同時にチェックできません（自動で弾きます）。</li>
+        </ul>
+      </div>
 
-  <button onclick="calculate()">計算する</button>
+      <div class="tableWrap">
+        <table id="deckTable">
+          <thead>
+            <tr>
+              <th>カード名</th>
+              <th style="width:90px;">枚数</th>
+              <th style="width:70px;">A？</th>
+              <th style="width:90px;">要素1</th>
+              <th style="width:90px;">要素2</th>
+              <th style="width:90px;">要素3</th>
+              <th style="width:90px;">削除</th>
+            </tr>
+          </thead>
+          <tbody id="deckTbody"></tbody>
+        </table>
+      </div>
 
-  <h2 id="result"></h2>
+      <div class="row">
+        <button id="saveBtn">ブラウザに保存</button>
+        <button id="loadBtn">保存を読み込み</button>
+        <button id="exportBtn">JSONエクスポート</button>
+        <label class="importLabel">
+          JSONインポート
+          <input id="importFile" type="file" accept="application/json" />
+        </label>
+        <button id="clearBtn" class="danger">全クリア</button>
+      </div>
+    </section>
 
-  <script>
-    function combination(n, r) {
-      if (r > n) return 0;
-      if (r === 0 || r === n) return 1;
-      let numerator = 1;
-      let denominator = 1;
-      for (let i = 0; i < r; i++) {
-        numerator *= (n - i);
-        denominator *= (i + 1);
-      }
-      return numerator / denominator;
-    }
+    <section class="panel">
+      <h2>集約パラメータ & 結果</h2>
+      <div class="grid3">
+        <div class="box">
+          <h3>集約（A以外）</h3>
+          <div id="aggBox" class="mono"></div>
+        </div>
+        <div class="box">
+          <h3>チェック</h3>
+          <div id="checkBox" class="mono"></div>
+        </div>
+        <div class="box">
+          <h3>結果</h3>
+          <div id="resultBox" class="result mono">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-    function calculate() {
-      let N = parseInt(document.getElementById("deck").value);
-      let K = parseInt(document.getElementById("success").value);
-      let H = parseInt(document.getElementById("draw").value);
+  <footer class="footer">
+    <small>Static app for GitHub Pages</small>
+  </footer>
 
-      if (H > N || K > N) {
-        document.getElementById("result").innerText = "入力値が不正です";
-        return;
-      }
-
-      let zeroSuccess = combination(N - K, H) / combination(N, H);
-      let probability = 1 - zeroSuccess;
-
-      document.getElementById("result").innerText =
-        "1枚以上引く確率：" + (probability * 100).toFixed(2) + "%";
-    }
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
