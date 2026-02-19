@@ -1,182 +1,126 @@
-:root{
-  --bg:#f5f7fb;
-  --panel:#ffffff;
-  --text:#111827;
-  --muted:#6b7280;
-  --border:#e5e7eb;
-  --shadow: 0 6px 20px rgba(0,0,0,.08);
-  --radius: 14px;
-}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VS 確率計算（vsスー使用可）</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>VS 確率計算（vsスー使用可）</h1>
+    <p class="sub">
+      初手H枚で「vsスー」「VSカード合計が2枚以上」「火」「闇」がそろう確率を計算します。
+      （vsスーは火でも闇でもないがVSとして数える。火と闇は同一カードに共存しない前提。）
+    </p>
+  </header>
 
-*{ box-sizing:border-box; }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
+  <main class="container">
+    <section class="panel">
+      <h2>基本設定</h2>
+      <div class="grid">
+        <label class="field">
+          <span>デッキ枚数 N</span>
+          <input id="deckSize" type="number" min="1" step="1" value="40" />
+        </label>
+        <label class="field">
+          <span>初手枚数 H</span>
+          <input id="handSize" type="number" min="1" step="1" value="5" />
+        </label>
+      </div>
+      <p id="status" class="status"></p>
+    </section>
 
-.header{
-  padding: 26px 16px 10px;
-  text-align:center;
-}
-.header h1{ margin:0 0 8px; font-size: 22px; }
-.sub{ margin:0 auto; max-width: 980px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    <section class="panel">
+      <h2>デッキ内訳（VS専用）</h2>
+      <div class="hint">
+        <ul>
+          <li>「その他」は <b>自動計算</b>（残り枚数を自動で埋めます）。</li>
+          <li>合計がNを超えるとエラーになり、計算できません。</li>
+        </ul>
+      </div>
 
-.container{
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 14px 12px 26px;
-  display: grid;
-  gap: 14px;
-}
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>カテゴリ</th>
+              <th style="width:140px;">枚数</th>
+              <th>説明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>vsスー</b></td>
+              <td><input id="nA" type="number" min="0" step="1" value="1"></td>
+              <td class="muted">A（VSとして数える／火でも闇でもない）</td>
+            </tr>
+            <tr>
+              <td>VS&火</td>
+              <td><input id="nVF" type="number" min="0" step="1" value="6"></td>
+              <td class="muted">VS名 + 火属性</td>
+            </tr>
+            <tr>
+              <td>VS&闇</td>
+              <td><input id="nVD" type="number" min="0" step="1" value="6"></td>
+              <td class="muted">VS名 + 闇属性</td>
+            </tr>
+            <tr>
+              <td>VSのみ（vsスー以外）</td>
+              <td><input id="nV" type="number" min="0" step="1" value="3"></td>
+              <td class="muted">VS名だが火/闇ではない（vsスーは含めない）</td>
+            </tr>
+            <tr>
+              <td>火のみ</td>
+              <td><input id="nF" type="number" min="0" step="1" value="4"></td>
+              <td class="muted">火属性（VS名ではない）</td>
+            </tr>
+            <tr>
+              <td>闇のみ</td>
+              <td><input id="nD" type="number" min="0" step="1" value="4"></td>
+              <td class="muted">闇属性（VS名ではない）</td>
+            </tr>
+            <tr>
+              <td><b>その他（自動）</b></td>
+              <td><input id="nO" type="number" value="0" disabled></td>
+              <td class="muted">上記以外。Nに合わせて自動調整</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-.panel{
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px;
-}
+      <div class="row">
+        <button id="calcBtn" class="primary">確率を計算</button>
+        <button id="resetBtn" class="danger">初期値に戻す</button>
+        <button id="saveBtn">保存</button>
+        <button id="loadBtn">読み込み</button>
+        <button id="exportBtn">JSONエクスポート</button>
+        <label class="importLabel">
+          JSONインポート
+          <input id="importFile" type="file" accept="application/json" />
+        </label>
+      </div>
+    </section>
 
-.panel h2{
-  margin: 0 0 12px;
-  font-size: 16px;
-}
+    <section class="panel">
+      <h2>結果</h2>
+      <div class="grid2">
+        <div class="box">
+          <h3>チェック</h3>
+          <div id="checkBox" class="mono"></div>
+        </div>
+        <div class="box">
+          <h3>確率</h3>
+          <div id="resultBox" class="result mono">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-.grid{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(160px, 1fr));
-  gap: 10px;
-  align-items: end;
-}
+  <footer class="footer">
+    <small>Static app for GitHub Pages</small>
+  </footer>
 
-.grid2{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 10px;
-}
-
-.field span{
-  display:block;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-input[type="number"]{
-  width: 100%;
-  padding: 10px 10px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 14px;
-  outline: none;
-  background: #fff;
-}
-
-input[disabled]{
-  background:#f3f4f6;
-  color:#374151;
-}
-
-.row{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  align-items:center;
-}
-
-button, .importLabel{
-  border: 1px solid var(--border);
-  background: #fff;
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
-button:hover, .importLabel:hover{ filter: brightness(0.98); }
-
-button.primary{
-  background: #111827;
-  color:#fff;
-  border-color:#111827;
-}
-button.danger{
-  background: #b91c1c;
-  color:#fff;
-  border-color:#b91c1c;
-}
-
-.status{
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.hint{
-  color: var(--muted);
-  font-size: 13px;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background: #fafafa;
-}
-.hint ul{ margin: 0; padding-left: 18px; }
-
-.tableWrap{
-  overflow:auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-top: 12px;
-}
-table{
-  width:100%;
-  border-collapse: collapse;
-  min-width: 720px;
-}
-th, td{
-  border-bottom: 1px solid var(--border);
-  padding: 10px 10px;
-  text-align: left;
-  font-size: 13px;
-}
-thead th{
-  background:#fafafa;
-  position: sticky;
-  top:0;
-  z-index:1;
-}
-
-.muted{ color: var(--muted); }
-
-.box{
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-  background: #fbfbfb;
-}
-.box h3{ margin: 0 0 10px; font-size: 14px; }
-.mono{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 12.5px;
-  white-space: pre-wrap;
-  line-height: 1.5;
-}
-.result{
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.importLabel{
-  display:inline-flex;
-  gap:10px;
-  align-items:center;
-}
-.importLabel input{ display:none; }
-
-.footer{
-  text-align:center;
-  padding: 10px 0 20px;
-  color: var(--muted);
-}
+  <script src="app.js"></script>
+</body>
+</html>
